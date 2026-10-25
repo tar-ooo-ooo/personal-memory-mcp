@@ -7,6 +7,14 @@ personal-memory-mcp/
 ├── AGENTS.md
 ├── README.md
 ├── .gitignore
-└── docs/
-    └── structure.md
+├── docs/
+│   └── structure.md
+├── scripts/
+│   └── export_codex_conversations.py  # 本機對話匯出
+├── tests/
+│   ├── test_annotation_page.py       # 可選 Playwright browser checks
+│   └── test_export_codex_conversations.py
+└── tools/
+    └── annotation/
+        └── index.html               # 標註頁；私有 conversations.js 不 commit
 ```
