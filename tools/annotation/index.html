@@ -1,0 +1,321 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Codex 對話標註 · Personal Memory MCP</title>
+  <style>
+    :root { color-scheme: light; --paper:#f5f3ee; --card:#fffefa; --ink:#26382f; --muted:#657268; --line:#dedfd5; --green:#246b48; --amber:#805b15; --red:#9b4137; }
+    * { box-sizing:border-box; }
+    body { margin:0; background:var(--paper); color:var(--ink); font:15px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang TC",sans-serif; }
+    button,input,select { font:inherit; }
+    button,select,input[type=search] { border:1px solid var(--line); border-radius:9px; background:var(--card); color:var(--ink); padding:9px 13px; }
+    button { cursor:pointer; }
+    button:disabled { opacity:.4; cursor:default; }
+    button:hover:not(:disabled) { border-color:var(--green); }
+    :focus-visible { outline:3px solid #b27830; outline-offset:3px; }
+    .shell { max-width:1040px; margin:auto; padding:42px 28px 64px; }
+    .eyebrow { color:var(--green); font-size:11px; font-weight:700; letter-spacing:.16em; margin:0 0 10px; }
+    h1 { font-size:34px; letter-spacing:-.04em; line-height:1.2; margin:0 0 12px; }
+    h2 { font-size:16px; margin:0; }
+    p { margin:0; }
+    .muted { color:var(--muted); }
+    header { display:flex; align-items:center; justify-content:space-between; gap:24px; }
+    #download { background:var(--ink); color:white; border-color:var(--ink); padding:12px 20px; white-space:nowrap; }
+    .overview { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin:28px 0 16px; }
+    .stat { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px 20px; }
+    .stat strong { font-size:27px; font-weight:650; margin-right:6px; }
+    .stat small { display:block; color:var(--muted); margin-top:2px; }
+    .progress { height:5px; background:#e2e5da; border-radius:9px; overflow:hidden; }
+    #progress-bar { height:100%; width:0; background:var(--green); transition:width .2s; }
+    .save-line { display:flex; justify-content:space-between; gap:12px; font-size:12px; color:var(--muted); margin:8px 0 20px; }
+    .legend { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin:0 0 20px; }
+    .legend > div { border-left:3px solid var(--line); padding:4px 12px; }
+    .legend strong { display:block; font-size:13px; }
+    .legend small { color:var(--muted); font-size:12px; }
+    .legend .confirmed { border-color:var(--green); }
+    .legend .candidate { border-color:var(--amber); }
+    .legend .skip { border-color:var(--muted); }
+    .toolbar { display:flex; flex-wrap:wrap; align-items:end; gap:12px; margin:18px 0; }
+    .toolbar label { font-size:12px; color:var(--muted); display:grid; gap:4px; }
+    .toolbar .search { flex:1; min-width:180px; }
+    .pagination { display:flex; gap:10px; align-items:center; justify-content:space-between; font-size:13px; margin:20px 0; }
+    .pagination .buttons { display:flex; gap:8px; align-items:center; }
+    .turn { border:1px solid var(--line); border-radius:14px; background:var(--card); margin:0 0 26px; overflow:hidden; }
+    .turn-heading { background:#eeefe7; padding:14px 20px; display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:8px; }
+    .turn-heading small { font-size:11px; color:var(--muted); }
+    .message { padding:22px; border-top:1px solid var(--line); }
+    .message[data-role=user] { border-left:3px solid var(--green); }
+    .message[data-role=assistant] { border-left:3px solid #c3b38f; }
+    .message-top { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:12px; }
+    .who { font-size:13px; font-weight:700; }
+    .phase { font-size:11px; font-weight:400; color:var(--muted); margin-left:8px; }
+    .message time { font-size:11px; color:var(--muted); }
+    .message-text { margin:0; white-space:pre-wrap; overflow-wrap:anywhere; font:14px/1.9 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang TC",sans-serif; }
+    details { margin-top:10px; }
+    summary { cursor:pointer; color:var(--green); font-size:12px; }
+    details .message-text { margin-top:12px; }
+    .labels { display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin-top:18px; }
+    .choice { position:relative; cursor:pointer; display:flex; align-items:center; gap:7px; padding:7px 12px; border:1px solid var(--line); border-radius:8px; font-size:13px; }
+    .choice input { accent-color:var(--green); margin:0; }
+    .choice:has(input:checked) { border-color:var(--green); background:#edf4eb; color:#195235; }
+    .choice:has(input[value="2"]:checked) { border-color:var(--amber); background:#fbf3df; color:#704c0d; }
+    .choice:has(input[value="3"]:checked) { border-color:#737b73; background:#eeefea; color:#4c574d; }
+    .clear { font-size:12px; padding:5px 10px; border:0; background:transparent; color:var(--muted); margin-left:auto; }
+    .image-note { color:var(--amber); background:#f8f0dd; display:inline-block; padding:3px 8px; border-radius:5px; font-size:12px; margin-top:10px; }
+    .empty { padding:44px 24px; border:1px dashed var(--line); border-radius:12px; text-align:center; background:var(--card); }
+    #notice { margin:16px 0; padding:12px 16px; border-radius:8px; background:#fff0d8; color:#795115; }
+    [hidden] { display:none !important; }
+    .context { font-size:12px; padding:10px 20px; border-top:1px solid var(--line); margin:0; }
+    .context pre { white-space:pre-wrap; overflow-wrap:anywhere; max-height:400px; overflow:auto; color:var(--muted); padding:10px; font-family:inherit; font-size:12px; line-height:1.8; }
+    footer { color:var(--muted); font-size:12px; margin-top:30px; border-top:1px solid var(--line); padding-top:18px; }
+    code { font:12px ui-monospace,monospace; }
+    @media(max-width:640px) {
+      .shell { padding:24px 14px; } h1 { font-size:28px; }
+      header { align-items:start; flex-direction:column; gap:14px; }
+      .overview { gap:7px; } .stat { padding:12px; } .stat strong { font-size:23px; }
+      .legend { grid-template-columns:1fr; gap:7px; }
+      .save-line { flex-direction:column; gap:2px; }
+      .message { padding:16px; } .message-top { align-items:start; }
+      .choice { padding:7px 9px; } .clear { margin-left:0; }
+      .pagination { align-items:start; gap:10px; flex-direction:column; }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header>
+      <div><p class="eyebrow">PERSONAL MEMORY MCP / LOCAL REVIEW</p><h1>Codex 對話標註</h1><p class="muted">一則訊息，一個判斷。先把值得記住的內容挑出來。</p></div>
+      <button id="download" type="button">下載標註 JSON ↓</button>
+    </header>
+    <section class="overview" aria-label="資料與標註進度">
+      <div class="stat"><strong id="turn-count">0</strong>回合<small id="session-count">讀取本機資料…</small></div>
+      <div class="stat"><strong id="reviewed-count">0</strong>已標註<small id="message-count">共 0 則訊息</small></div>
+      <div class="stat"><strong id="progress-percent">0%</strong>完成<small id="label-counts">1：0 · 2：0 · 3：0</small></div>
+    </section>
+    <div class="progress" role="progressbar" aria-label="標註完成度" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div id="progress-bar"></div></div>
+    <div class="save-line"><span id="save-status" role="status" aria-live="polite">標註自動儲存在這個瀏覽器</span><span id="dataset-status"></span></div>
+    <section class="legend" aria-label="標籤定義">
+      <div class="confirmed"><strong>1 · confirmed</strong><small>已確認、有長期價值，可保存。</small></div>
+      <div class="candidate"><strong>2 · candidate</strong><small>可能值得保存，需要確認。</small></div>
+      <div class="skip"><strong>3 · skip</strong><small>不保存：無關、暫時或明確拒存。</small></div>
+    </section>
+    <p id="notice" role="alert" hidden></p>
+    <div class="toolbar">
+      <label class="search">搜尋對話<input id="search" type="search" placeholder="輸入關鍵字"></label>
+      <label>標註狀態<select id="filter"><option value="all">全部訊息</option><option value="unreviewed">未標註</option><option value="1">1 · confirmed</option><option value="2">2 · candidate</option><option value="3">3 · skip</option></select></label>
+      <label>角色<select id="role"><option value="all">你與 Codex</option><option value="user">只看你的提問</option><option value="assistant">只看 Codex 回覆</option></select></label>
+    </div>
+    <nav class="pagination" aria-label="上方分頁"><span class="page-info"></span><div class="buttons"><button class="previous" type="button">← 上一頁</button><span class="page-number"></span><button class="next" type="button">下一頁 →</button></div></nav>
+    <section id="turns" aria-label="對話回合"></section>
+    <nav class="pagination" aria-label="下方分頁"><span class="page-info"></span><div class="buttons"><button class="previous" type="button">← 上一頁</button><span class="page-number"></span><button class="next" type="button">下一頁 →</button></div></nav>
+    <footer>資料與標註只留在本機，頁面不呼叫外部 API。下載含原文、角色、session／turn ID 與標籤；未標註維持 null，不自動當成 3。圖片只保留標記，未匯出原圖。建議定期下載備份。</footer>
+  </main>
+  <script src="./conversations.js"></script>
+  <script>
+    "use strict";
+    const STORAGE_KEY = "personal-memory-mcp:codex-labels:v1";
+    const LABELS = {1: "confirmed", 2: "candidate", 3: "skip"};
+    const dataset = window.CODEX_ANNOTATION_DATA;
+    const turns = dataset?.schema_version === 1 && Array.isArray(dataset.turns) ? dataset.turns : [];
+    const messageIDs = new Set(turns.flatMap(turn => turn.messages.map(message => message.id)));
+    const PAGE_SIZE = 6;
+    let page = 0;
+    let storageHealthy = true;
+    let annotations = {};
+    const $ = selector => document.querySelector(selector);
+    const $$ = selector => document.querySelectorAll(selector);
+    const node = (tag, className, text) => {
+      const element = document.createElement(tag);
+      if (className) element.className = className;
+      if (text !== undefined) element.textContent = text;
+      return element;
+    };
+    const notices = new Set();
+    function notify(text) { notices.add(text); $("#notice").textContent = [...notices].join(" "); $("#notice").hidden = false; }
+    function readAnnotations() {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return {};
+      const saved = JSON.parse(raw);
+      if (saved.version !== 1 || !saved.annotations || typeof saved.annotations !== "object") throw new Error("invalid storage format");
+      return Object.fromEntries(Object.entries(saved.annotations).filter(([, entry]) => entry && Number.isInteger(entry.label) && Object.hasOwn(LABELS, entry.label)));
+    }
+    try { annotations = readAnnotations(); }
+    catch { storageHealthy = false; notify("無法讀取 localStorage。標註暫存於本頁，請下載 JSON；原有瀏覽器資料未覆寫。"); }
+
+    function annotate(messageID, label) {
+      if (storageHealthy) {
+        try { annotations = readAnnotations(); }
+        catch { storageHealthy = false; }
+      }
+      if (label === null) delete annotations[messageID];
+      else annotations[messageID] = {label, updated_at: new Date().toISOString()};
+      try {
+        if (!storageHealthy) throw new Error("storage unavailable");
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({version: 1, annotations}));
+        $("#save-status").textContent = "已自動儲存 · " + new Date().toLocaleTimeString("zh-TW");
+      } catch {
+        storageHealthy = false;
+        $("#save-status").textContent = "尚未儲存至瀏覽器，請下載 JSON";
+        notify("localStorage 無法儲存。此頁標註仍可下載；重新整理前請先下載 JSON。");
+      }
+      updateProgress();
+    }
+
+    function dateLabel(timestamp) {
+      const date = new Date(timestamp);
+      return Number.isNaN(date.valueOf()) ? timestamp || "時間未知" : date.toLocaleString("zh-TW", {hour12: false});
+    }
+
+    function updateProgress() {
+      const counts = {1: 0, 2: 0, 3: 0};
+      for (const id of messageIDs) {
+        const value = annotations[id]?.label;
+        if (Object.hasOwn(counts, value)) counts[value]++;
+      }
+      const reviewed = counts[1] + counts[2] + counts[3];
+      const percent = messageIDs.size ? Math.round(reviewed / messageIDs.size * 100) : 0;
+      $("#turn-count").textContent = turns.length.toLocaleString();
+      $("#session-count").textContent = new Set(turns.map(turn => turn.session_id)).size + " 個 sessions · 最新在前";
+      $("#reviewed-count").textContent = reviewed.toLocaleString();
+      $("#message-count").textContent = "共 " + messageIDs.size.toLocaleString() + " 則訊息";
+      $("#progress-percent").textContent = percent + "%";
+      $("#label-counts").textContent = `1：${counts[1]} · 2：${counts[2]} · 3：${counts[3]}`;
+      $("#progress-bar").style.width = percent + "%";
+      $(".progress").setAttribute("aria-valuenow", percent);
+    }
+
+    function matches(message) {
+      const label = annotations[message.id]?.label;
+      const filter = $("#filter").value;
+      const role = $("#role").value;
+      const query = $("#search").value.trim().toLocaleLowerCase();
+      return (filter === "all" || (filter === "unreviewed" ? label === undefined : label === Number(filter)))
+        && (role === "all" || message.role === role)
+        && (!query || message.text.toLocaleLowerCase().includes(query));
+    }
+
+    function messageCard(message) {
+      const article = node("article", "message");
+      article.dataset.messageId = message.id;
+      article.dataset.role = message.role;
+      const top = node("div", "message-top");
+      const who = node("div", "who", message.role === "user" ? "你 / User" : "Codex / Assistant");
+      if (message.role === "assistant") who.append(node("span", "phase", message.phase === "commentary" ? "進度更新" : "回覆"));
+      const time = node("time", "", dateLabel(message.timestamp));
+      time.dateTime = message.timestamp;
+      top.append(who, time);
+      article.append(top);
+      const text = message.text || "（此則只有圖片）";
+      if (text.length > 1800) {
+        article.append(node("pre", "message-text", text.slice(0, 1600) + "…"));
+        const details = node("details");
+        details.append(node("summary", "", `展開完整內容（${text.length.toLocaleString()} 字元）`), node("pre", "message-text", text));
+        article.append(details);
+      } else article.append(node("pre", "message-text", text));
+      if (message.image_count) article.append(node("span", "image-note", `包含 ${message.image_count} 張圖片；本次未匯出原圖`));
+      const choices = node("div", "labels");
+      choices.setAttribute("role", "group");
+      choices.setAttribute("aria-label", "這則訊息的標註");
+      for (const [number, name] of Object.entries(LABELS)) {
+        const label = node("label", "choice");
+        const input = document.createElement("input");
+        input.type = "radio";
+        input.name = message.id;
+        input.value = number;
+        input.checked = annotations[message.id]?.label === Number(number);
+        input.addEventListener("change", () => annotate(message.id, Number(number)));
+        label.append(input, node("span", "", `${number} · ${name}`));
+        choices.append(label);
+      }
+      const clear = node("button", "clear", "清除選擇");
+      clear.type = "button";
+      clear.addEventListener("click", () => { annotate(message.id, null); choices.querySelectorAll("input").forEach(input => { input.checked = false; }); });
+      choices.append(clear);
+      article.append(choices);
+      return article;
+    }
+
+    function render() {
+      const matchesByTurn = [...turns].reverse().map(turn => ({turn, messages: turn.messages.filter(matches)})).filter(row => row.messages.length);
+      const pages = Math.max(1, Math.ceil(matchesByTurn.length / PAGE_SIZE));
+      page = Math.max(0, Math.min(page, pages - 1));
+      const start = page * PAGE_SIZE;
+      $("#turns").replaceChildren();
+      for (const {turn, messages} of matchesByTurn.slice(start, start + PAGE_SIZE)) {
+        const card = node("section", "turn");
+        const heading = node("div", "turn-heading");
+        heading.append(node("h2", "", "回合 · " + dateLabel(turn.timestamp)), node("small", "", "Session " + turn.session_id.slice(0, 8)));
+        card.append(heading);
+        const currentIndex = turns.findIndex(other => other.id === turn.id);
+        const previous = turns.slice(0, currentIndex).filter(other => other.session_id === turn.session_id);
+        const context = node("details", "context");
+        context.append(node("summary", "", "查看同 session 前 2 回合與本輪完整脈絡"));
+        const contextTurns = [...previous.slice(-2), turn];
+        context.append(node("pre", "", contextTurns.map(item => item.messages.map(message => `${message.role === "user" ? "User" : "Assistant"}: ${message.text || "（圖片）"}`).join("\n\n")).join("\n\n────────\n\n")));
+        card.append(context);
+        for (const message of messages) card.append(messageCard(message));
+        $("#turns").append(card);
+      }
+      if (!matchesByTurn.length) {
+        const text = turns.length ? "沒有符合條件的訊息。" : "尚未載入對話資料。請先執行：python3 scripts/export_codex_conversations.py";
+        $("#turns").append(node("div", "empty", text));
+      }
+      $$(".page-info").forEach(element => { element.textContent = `${matchesByTurn.length.toLocaleString()} 個符合回合 · 每頁 ${PAGE_SIZE} 回合`; });
+      $$(".page-number").forEach(element => { element.textContent = `${page + 1} / ${pages}`; });
+      $$(".previous").forEach(button => { button.disabled = page === 0; });
+      $$(".next").forEach(button => { button.disabled = page >= pages - 1; });
+      $("#download").disabled = !turns.length;
+    }
+
+    $("#download").addEventListener("click", () => {
+      const reviewed = [...messageIDs].filter(id => annotations[id]).length;
+      const output = {
+        schema_version: 1,
+        dataset_id: dataset.dataset_id,
+        exported_at: new Date().toISOString(),
+        source_generated_at: dataset.generated_at,
+        label_schema: LABELS,
+        annotation_unit: "message_with_turn_context",
+        requested_turns: dataset.requested_turns,
+        available_turns: dataset.available_turns,
+        turn_count: turns.length,
+        message_count: messageIDs.size,
+        reviewed_count: reviewed,
+        unreviewed_count: messageIDs.size - reviewed,
+        turns: turns.map(turn => ({...turn, messages: turn.messages.map(message => ({
+          ...message,
+          label: annotations[message.id]?.label ?? null,
+          label_name: LABELS[annotations[message.id]?.label] ?? null,
+          annotated_at: annotations[message.id]?.updated_at ?? null,
+        }))})),
+      };
+      const blob = new Blob([JSON.stringify(output, null, 2)], {type: "application/json;charset=utf-8"});
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `codex-labels-${new Date().toISOString().slice(0, 10)}.json`;
+      link.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    });
+    for (const selector of ["#filter", "#role"]) $(selector).addEventListener("change", () => { page = 0; render(); });
+    $("#search").addEventListener("input", () => { page = 0; render(); });
+    $$(".previous").forEach(button => button.addEventListener("click", () => { page--; render(); window.scrollTo({top: 0, behavior: "smooth"}); }));
+    $$(".next").forEach(button => button.addEventListener("click", () => { page++; render(); window.scrollTo({top: 0, behavior: "smooth"}); }));
+    window.addEventListener("storage", event => {
+      if (event.key !== STORAGE_KEY) return;
+      try { annotations = readAnnotations(); updateProgress(); render(); }
+      catch { notify("其他分頁的標註無法讀取；請先下載本頁結果。"); }
+    });
+    if (dataset) {
+      $("#dataset-status").textContent = `快照 ${dateLabel(dataset.generated_at)}`;
+      if (dataset.available_turns < dataset.requested_turns) {
+        notify(`已載入全部 ${dataset.available_turns} 個可用主對話回合；匯出上限為 ${dataset.requested_turns}。`);
+      }
+      if (dataset.stats?.malformed_lines) notify(`匯出時略過 ${dataset.stats.malformed_lines} 行不完整紀錄；請參閱匯出指令輸出。`);
+    }
+    updateProgress();
+    render();
+  </script>
+</body>
+</html>

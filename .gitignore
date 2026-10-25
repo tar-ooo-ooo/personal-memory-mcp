@@ -5,3 +5,5 @@ __pycache__/
 .pytest_cache/
 .env
 .DS_Store
+/tools/annotation/conversations.js
+codex-labels-*.json
