@@ -11,5 +11,6 @@
 
 - 格式固定為 `<type>(<module>): <summary>`。
 - `<module>` 使用受影響的英文模組名稱，例如 `Laya`、`MemoryMCP`、`Router`、`Storage`、`Docs`。
+- `<summary>` 一律使用繁中；`<type>` 與 `<module>` 保持英文。
 - 一個 commit 只放一個可說清楚的變更。
-- 例：`feat(Laya): add local smoke test`
+- 例：`feat(Laya): 新增本機 smoke test`
