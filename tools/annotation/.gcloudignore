@@ -1,0 +1,7 @@
+*
+!Dockerfile.finetune-test
+!cloudbuild.finetune-test.yaml
+!.dockerignore
+!.gcloudignore
+!index.html
+!conversations.js

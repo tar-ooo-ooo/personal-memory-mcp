@@ -1,0 +1,7 @@
+steps:
+  - name: gcr.io/cloud-builders/docker
+    args: [build, --file, Dockerfile.finetune-test, --tag, '${_IMAGE}', .]
+images:
+  - '${_IMAGE}'
+substitutions:
+  _IMAGE: asia-east1-docker.pkg.dev/skill-ai-474905/cloud-run-source-deploy/personal-memory-annotation
