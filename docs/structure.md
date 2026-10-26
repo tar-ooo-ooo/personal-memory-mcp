@@ -16,5 +16,9 @@ personal-memory-mcp/
 │   └── test_export_codex_conversations.py
 └── tools/
     └── annotation/
-        └── index.html               # 標註頁；私有 conversations.js 不 commit
+        ├── .dockerignore
+        ├── .gcloudignore
+        ├── Dockerfile.finetune-test  # 標註測試頁專用
+        ├── cloudbuild.finetune-test.yaml
+        └── index.html               # 標註頁；conversations.js 不 commit
 ```

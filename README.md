@@ -27,6 +27,7 @@ Codex 與 Hermes 共用、以 `owner_id` 隔離的個人記憶服務。
 | 私有資料 | `tools/annotation/conversations.js` 與 `codex-labels-*.json` 已忽略，不 commit |
 | 標註進度 | 綁定目前瀏覽器與網址；重新匯出以穩定 message ID 保留既有標註 |
 | JSON | 包含完整原文、角色、session／turn ID、標籤與時間；未標註為 `null` |
+| 匯入標註 | 可匯入先前下載的 JSON；按 message ID 合併，保留較新標註與未涵蓋的項目 |
 | 模型訓練 | 本頁只做訊息標註；訓練時仍須按 session 分組，寫入內容／目標表可後續補標 |
 | 測試 | `python3 -m unittest discover -s tests -v`；browser checks 使用已安裝的 Playwright，未安裝則略過 |
 
@@ -37,6 +38,33 @@ python3 scripts/export_codex_conversations.py --limit 1000
 ```
 
 固定用同一個 Live Server 網址標註；不同 port 不共用 localStorage。也可直接開 HTML。
+
+## Cloud Run 標註頁
+
+[開啟標註頁](https://personal-memory-annotation-355216536623.asia-east1.run.app)。換網址或裝置時，先下載舊標註 JSON，再到新頁面匯入。
+
+| 項目 | 設定 |
+|---|---|
+| Cloud Run | `skill-ai-474905`／`asia-east1`／`personal-memory-annotation` |
+| 範圍 | 公開靜態 HTML＋對話快照，取得網址的人可讀原文；標註仍只存在瀏覽器 |
+| Dockerfile | `tools/annotation/Dockerfile.finetune-test`，只用於標註測試頁 |
+| Build 設定 | `tools/annotation/cloudbuild.finetune-test.yaml`，明確指定 Dockerfile 名稱 |
+| 上傳範圍 | `.gcloudignore` 白名單；不包含 `.env` 或其他 repo 檔案 |
+
+更新對話快照後，從 repo 根目錄重新部署：
+
+```zsh
+gcloud builds submit tools/annotation \
+  --config tools/annotation/cloudbuild.finetune-test.yaml \
+  --project skill-ai-474905 --region asia-east1
+
+gcloud run deploy personal-memory-annotation \
+  --image asia-east1-docker.pkg.dev/skill-ai-474905/cloud-run-source-deploy/personal-memory-annotation \
+  --project skill-ai-474905 --region asia-east1 \
+  --service-account personal-memory-annotation@skill-ai-474905.iam.gserviceaccount.com \
+  --allow-unauthenticated --port 8080 \
+  --cpu 1 --memory 128Mi --min-instances 0 --max-instances 1
+```
 
 ## Port 配置
 
