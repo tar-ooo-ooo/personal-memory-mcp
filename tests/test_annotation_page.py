@@ -138,6 +138,28 @@ class AnnotationPageTests(unittest.TestCase):
         self.pick("u7", 1)
         self.assertEqual(self.page.locator("#reviewed-count").inner_text(), "1")
 
+    def test_import_restores_labels_and_keeps_newer_existing_labels(self):
+        self.pick("u7", 3)
+        data = {"schema_version": 1, "turns": [{"messages": [
+            {"id": "u7", "label": 1, "annotated_at": "2020-01-01T00:00:00Z"},
+            {"id": "a7", "label": 2, "annotated_at": "2020-01-01T00:00:00Z"},
+            {"id": "u6", "label": None},
+            {"id": "another-dataset", "label": 1},
+        ]}]}
+        self.page.locator("#import-file").set_input_files({"name": "labels.json", "mimeType": "application/json", "buffer": json.dumps(data).encode()})
+        self.page.wait_for_function("document.querySelector('#reviewed-count').textContent === '2'")
+        self.assertTrue(self.page.locator("[data-message-id=u7] input[value='3']").is_checked())
+        self.assertTrue(self.page.locator("[data-message-id=a7] input[value='2']").is_checked())
+        self.page.reload()
+        self.assertEqual(self.page.locator("#reviewed-count").inner_text(), "2")
+
+    def test_invalid_import_does_not_partially_apply_labels(self):
+        self.pick("u7", 1)
+        data = {"schema_version": 1, "turns": [{"messages": [{"id": "a7", "label": 2}, {"id": "u6", "label": 99}]}]}
+        self.page.locator("#import-file").set_input_files({"name": "bad.json", "mimeType": "application/json", "buffer": json.dumps(data).encode()})
+        self.page.wait_for_function("document.querySelector('#notice').textContent.includes('只能是')")
+        self.assertEqual(self.download()["reviewed_count"], 1)
+
 
 if __name__ == "__main__":
     unittest.main()

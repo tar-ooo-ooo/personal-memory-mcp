@@ -21,6 +21,7 @@
     p { margin:0; }
     .muted { color:var(--muted); }
     header { display:flex; align-items:center; justify-content:space-between; gap:24px; }
+    .actions { display:flex; flex-wrap:wrap; gap:8px; }
     #download { background:var(--ink); color:white; border-color:var(--ink); padding:12px 20px; white-space:nowrap; }
     .overview { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin:28px 0 16px; }
     .stat { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px 20px; }
@@ -86,7 +87,7 @@
   <main class="shell">
     <header>
       <div><p class="eyebrow">PERSONAL MEMORY MCP / LOCAL REVIEW</p><h1>Codex 對話標註</h1><p class="muted">一則訊息，一個判斷。先把值得記住的內容挑出來。</p></div>
-      <button id="download" type="button">下載標註 JSON ↓</button>
+      <div class="actions"><button id="import" type="button">匯入標註 JSON</button><input id="import-file" type="file" accept="application/json,.json" hidden><button id="download" type="button">下載標註 JSON ↓</button></div>
     </header>
     <section class="overview" aria-label="資料與標註進度">
       <div class="stat"><strong id="turn-count">0</strong>回合<small id="session-count">讀取本機資料…</small></div>
@@ -109,7 +110,7 @@
     <nav class="pagination" aria-label="上方分頁"><span class="page-info"></span><div class="buttons"><button class="previous" type="button">← 上一頁</button><span class="page-number"></span><button class="next" type="button">下一頁 →</button></div></nav>
     <section id="turns" aria-label="對話回合"></section>
     <nav class="pagination" aria-label="下方分頁"><span class="page-info"></span><div class="buttons"><button class="previous" type="button">← 上一頁</button><span class="page-number"></span><button class="next" type="button">下一頁 →</button></div></nav>
-    <footer>資料與標註只留在本機，頁面不呼叫外部 API。下載含原文、角色、session／turn ID 與標籤；未標註維持 null，不自動當成 3。圖片只保留標記，未匯出原圖。建議定期下載備份。</footer>
+    <footer>對話來自此頁附帶的固定快照；標註僅存在目前瀏覽器，不會自動同步。換網址或裝置時，可下載 JSON 再匯入標註。下載含原文、角色、session／turn ID 與標籤；未標註維持 null，不自動當成 3。圖片只保留標記，未匯出原圖。</footer>
   </main>
   <script src="./conversations.js"></script>
   <script>
@@ -150,6 +151,10 @@
       }
       if (label === null) delete annotations[messageID];
       else annotations[messageID] = {label, updated_at: new Date().toISOString()};
+      persistAnnotations();
+    }
+
+    function persistAnnotations() {
       try {
         if (!storageHealthy) throw new Error("storage unavailable");
         localStorage.setItem(STORAGE_KEY, JSON.stringify({version: 1, annotations}));
@@ -160,6 +165,35 @@
         notify("localStorage 無法儲存。此頁標註仍可下載；重新整理前請先下載 JSON。");
       }
       updateProgress();
+    }
+
+    function importAnnotations(data) {
+      if (data?.schema_version !== 1 || !Array.isArray(data.turns)) throw new Error("請選擇本工具下載的標註 JSON。");
+      const imported = {};
+      let matched = 0;
+      for (const turn of data.turns) {
+        if (!Array.isArray(turn?.messages)) throw new Error("JSON 缺少 messages，未修改既有標註。");
+        for (const message of turn.messages) {
+          if (typeof message?.id !== "string") throw new Error("JSON 缺少訊息 ID，未修改既有標註。");
+          if (message.label === null || message.label === undefined) continue;
+          if (!Number.isInteger(message.label) || !Object.hasOwn(LABELS, message.label)) throw new Error("JSON 標籤只能是 1、2、3，未修改既有標註。");
+          if (!messageIDs.has(message.id)) continue;
+          imported[message.id] = {label: message.label, updated_at: message.annotated_at || new Date().toISOString()};
+          matched++;
+        }
+      }
+      if (!matched) throw new Error("檔案沒有可對應目前對話快照的已標註訊息。");
+      if (storageHealthy) {
+        try { annotations = readAnnotations(); }
+        catch { storageHealthy = false; }
+      }
+      for (const [id, entry] of Object.entries(imported)) {
+        const existing = annotations[id];
+        if (!existing || !(Date.parse(existing.updated_at) > Date.parse(entry.updated_at))) annotations[id] = entry;
+      }
+      persistAnnotations();
+      render();
+      notify(`已合併 ${Object.keys(imported).length} 則對應標註；保留較新標註與檔案未涵蓋的項目。`);
     }
 
     function dateLabel(timestamp) {
@@ -268,6 +302,14 @@
       $("#download").disabled = !turns.length;
     }
 
+    $("#import").addEventListener("click", () => $("#import-file").click());
+    $("#import-file").addEventListener("change", async event => {
+      const file = event.target.files[0];
+      if (!file) return;
+      try { importAnnotations(JSON.parse(await file.text())); }
+      catch (error) { notify(error instanceof SyntaxError ? "JSON 格式無法讀取，未修改既有標註。" : error.message); }
+      finally { event.target.value = ""; }
+    });
     $("#download").addEventListener("click", () => {
       const reviewed = [...messageIDs].filter(id => annotations[id]).length;
       const output = {
